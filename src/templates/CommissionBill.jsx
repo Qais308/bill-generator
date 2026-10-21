@@ -153,12 +153,12 @@ export default function CommissionBill({
           color: #111;
           border: 3px solid #111;
           border-radius: 12px;
-          padding: 2.5cqw 3cqw;
+          padding: 3cqw 3.5cqw;
           font-family: Arial, Helvetica, sans-serif;
           display: flex;
           flex-direction: column;
           font-size: 2.1cqw;
-          line-height: 1.2;
+          line-height: 1.3;
         }
 
         .commission-paper * {
@@ -202,8 +202,8 @@ export default function CommissionBill({
           align-items: center;
           justify-content: center;
           gap: 1cqw;
-          margin-top: 0.3cqw;
-          min-height: 4cqw;
+          margin-top: 0.5cqw;
+          min-height: 4.5cqw;
         }
 
         .company-logo {
@@ -224,7 +224,7 @@ export default function CommissionBill({
 
         .company-subtitle {
           text-align: center;
-          font-size: 1.3em;
+          font-size: 1.35em;
           font-style: italic;
           font-weight: 600;
           line-height: 1.2;
@@ -232,30 +232,30 @@ export default function CommissionBill({
 
         .company-regions {
           text-align: center;
-          font-size: 1.2em;
+          font-size: 1.25em;
           font-style: italic;
           font-weight: 600;
         }
 
         .company-loading {
           text-align: center;
-          font-size: 1.3em;
+          font-size: 1.4em;
           font-weight: 900;
         }
 
         .company-email {
           text-align: center;
-          font-size: 1.2em;
+          font-size: 1.25em;
           font-weight: 550;
           overflow-wrap: anywhere;
         }
 
         /* Address and date */
         .bill-address {
-          margin: 0.4cqw -0.3cqw 0;
-          padding: 0.3cqw 0;
+          margin: 0.6cqw -0.3cqw 0;
+          padding: 0.4cqw 0;
           text-align: center;
-          font-size: 1.3em;
+          font-size: 1.35em;
           font-weight: 800;
           border-top: 2px solid #111;
           border-bottom: 2px solid #111;
@@ -266,26 +266,26 @@ export default function CommissionBill({
           justify-content: flex-end;
           align-items: baseline;
           gap: 0.8cqw;
-          margin: 0.5cqw 0.2cqw 0.3cqw;
+          margin: 0.8cqw 0.2cqw 0.5cqw;
           font-size: 1.15em;
           font-weight: 600;
         }
 
-        /* Bill fields - tighter spacing */
+        /* Bill fields */
         .bill-fields {
           display: flex;
           flex-direction: column;
-          gap: 0.35cqw;
+          gap: 0.7cqw;
           flex: 1;
           min-height: 0;
-          padding-top: 0.2cqw;
+          padding-top: 0.5cqw;
         }
 
         .bill-line {
           display: flex;
           align-items: baseline;
           gap: 0.8cqw;
-          min-height: 1.35em;
+          min-height: 1.6em;
           font-size: 1.15em;
           font-weight: 600;
         }
@@ -293,16 +293,16 @@ export default function CommissionBill({
         .bill-label {
           flex: 0 0 auto;
           white-space: nowrap;
-          line-height: 1.2;
+          line-height: 1.3;
         }
 
-        /* Crisp smaller black dots */
+        /* Crisp black dots with downward offset */
         .bill-dots {
           flex: 1;
           min-width: 5px;
           min-height: 1.4em;
           position: relative;
-          background-image: url("data:image/svg+xml,%3Csvg width='5' height='3' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1' cy='1.5' r='0.7' fill='black'/%3E%3C/svg%3E");
+          background-image: url("data:image/svg+xml,%3Csvg width='6' height='2' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1' cy='1' r='0.9' fill='black'/%3E%3C/svg%3E");
           background-repeat: repeat-x;
           background-position: left bottom;
           display: flex;
@@ -316,14 +316,14 @@ export default function CommissionBill({
         .bill-value {
           display: inline-block;
           position: relative;
-          padding: 0 4px;
+          padding: 0 5px;
           background: white;
           transform: translateY(-2px);
           overflow-wrap: anywhere;
           font-size: 1em;
           font-weight: 500;
           -webkit-font-smoothing: antialiased;
-          line-height: 1.15;
+          line-height: 1.2;
           color: #111;
           z-index: 2;
           -webkit-print-color-adjust: exact;
@@ -349,7 +349,7 @@ export default function CommissionBill({
         .bill-money-row {
           display: flex;
           width: 68%;
-          min-height: 1.35em;
+          min-height: 1.6em;
           align-items: baseline;
           gap: 0.8cqw;
           font-size: 1.15em;
@@ -360,16 +360,16 @@ export default function CommissionBill({
         .bill-notice {
           flex-shrink: 0;
           border-top: 2px solid #111;
-          margin: -0.5cqw -0.3cqw 0;
-          padding: 0 0.4cqw 0.2cqw;
+          margin: -1cqw -0.3cqw 0;
+          padding: 0 0.4cqw 0.3cqw;
         }
 
         .bill-notice-title {
           text-align: center;
-          font-size: 1.2em;
+          font-size: 1.3em;
           font-weight: 900;
           text-decoration: underline;
-          margin: -0.6em auto 0.3cqw;
+          margin: -0.65em auto 0.4cqw;
           width: max-content;
           max-width: 100%;
           background: white;
@@ -377,23 +377,23 @@ export default function CommissionBill({
         }
 
         .bill-notice-text {
-          font-size: 1.1em;
+          font-size: 1.2em;
           font-weight: 550;
-          line-height: 1.25;
-          padding: 0.2cqw 0.5cqw 0.4cqw;
+          line-height: 1.3;
+          padding: 0.4cqw 0.5cqw 0.6cqw;
         }
 
         /* Signature + company name container */
         .bill-signature-container {
           position: absolute;
           right: 4%;
-          bottom: 15%;
+          bottom: 18%;
           width: 30%;
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: flex-end;
-          gap: 0.3cqw;
+          gap: 0.4cqw;
           box-sizing: border-box;
           text-align: center;
           z-index: 2;
@@ -410,7 +410,7 @@ export default function CommissionBill({
 
         .bill-signature-space {
           width: 100%;
-          min-height: 4cqw;
+          min-height: 5cqw;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -422,7 +422,7 @@ export default function CommissionBill({
           width: auto;
           height: auto;
           max-width: 100%;
-          max-height: 15cqw;
+          max-height: 16cqw;
           object-fit: contain;
           object-position: center;
           margin: 0 auto;
@@ -430,11 +430,34 @@ export default function CommissionBill({
 
         .bill-signature-container > div:last-child {
           width: 100%;
-          font-size: 1.2cqw;
+          font-size: 1.6cqw;
           font-weight: 600;
           line-height: 1.2;
           overflow-wrap: anywhere;
           text-align: center;
+        }
+
+        /* Tighter line spacing ONLY on mobile screens */
+        @media (max-width: 768px) {
+          .bill-fields {
+            gap: 0.35cqw !important;
+            padding-top: 0.2cqw !important;
+          }
+          .bill-line {
+            min-height: 1.35em !important;
+          }
+          .bill-money-row {
+            min-height: 1.35em !important;
+          }
+          .bill-dots {
+            background-image: url("data:image/svg+xml,%3Csvg width='3.5' height='2' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1' cy='1' r='0.6' fill='black'/%3E%3C/svg%3E") !important;
+            background-repeat: repeat-x !important;
+            background-position: left bottom !important;
+            transform: translateY(2px) !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+            
         }
 
         @media (max-width: 480px) {
@@ -514,32 +537,13 @@ export default function CommissionBill({
           }
 
           .bill-dots {
-          flex: 1;
-          min-width: 5px;
-          min-height: 1.4em;
-          position: relative;
-          background-image: url("data:image/svg+xml,%3Csvg width='5' height='3' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1' cy='1.5' r='0.7' fill='black'/%3E%3C/svg%3E");
-          background-repeat: repeat-x;
-          background-position: left bottom;
-          display: flex;
-          align-items: flex-end;
-          transform: translateY(2px);
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
-        }
-
-          @media (max-width: 768px) {
-          .bill-fields {
-            gap: 0.35cqw;
-            padding-top: 0.2cqw;
+            background-image: url("data:image/svg+xml,%3Csvg width='6' height='2' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1' cy='1' r='0.9' fill='black'/%3E%3C/svg%3E") !important;
+            background-repeat: repeat-x !important;
+            background-position: left bottom !important;
+            transform: translateY(2px) !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
-          .bill-line {
-            min-height: 1.35em;
-          }
-          .bill-money-row {
-            min-height: 1.35em;
-          }
-        }
 
           .bill-value {
             background: white !important;
