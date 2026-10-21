@@ -6,33 +6,21 @@ import LoadingAdviceBill from "./templates/LoadingAdviceBill";
 import "./index.css";
 
 export default function App() {
-  const [page, setPage] = useState(() => {
-    return localStorage.getItem("app_page") || "home";
-  });
-  const [selectedBillType, setSelectedBillType] = useState(() => {
-    return localStorage.getItem("app_bill_type") || null;
-  });
+  // 1. ALWAYS start on "home" when the app is freshly opened/refreshed
+  const [page, setPage] = useState("home");
+  const [selectedBillType, setSelectedBillType] = useState(null);
 
-  // Sync page and bill type changes to localStorage
+  // 2. Handle browser/mobile back button gracefully
   useEffect(() => {
-    if (page === "home") {
-      localStorage.removeItem("app_page");
-      localStorage.removeItem("app_bill_type");
-    } else {
-      localStorage.setItem("app_page", page);
-      if (selectedBillType) {
-        localStorage.setItem("app_bill_type", selectedBillType);
-      }
-    }
-  }, [page, selectedBillType]);
+    // Push an initial history entry when the app loads
+    window.history.replaceState({ page: "home" }, "");
 
-  // Back-button handler for browser history management
-  useEffect(() => {
-    const handlePopState = () => {
+    const handlePopState = (event) => {
+      // If the user clicks back while on a bill page, return home instead of exiting site
       setPage("home");
       setSelectedBillType(null);
-      localStorage.removeItem("app_page");
-      localStorage.removeItem("app_bill_type");
+      // Ensure history state stays synchronized
+      window.history.replaceState({ page: "home" }, "");
     };
 
     window.addEventListener("popstate", handlePopState);
@@ -40,6 +28,7 @@ export default function App() {
   }, []);
 
   function handleSelectBillType(type) {
+    // Push a new history state when entering a bill so the back button can catch it
     window.history.pushState({ page: "bill", type }, "");
     setSelectedBillType(type);
     setPage("bill");
@@ -48,15 +37,12 @@ export default function App() {
   function goHome() {
     setPage("home");
     setSelectedBillType(null);
-    localStorage.removeItem("app_page");
-    localStorage.removeItem("app_bill_type");
+    window.history.replaceState({ page: "home" }, "");
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar
-        onGoHome={goHome}
-      />
+      <Navbar onGoHome={goHome} />
 
       {page === "home" && (
         <HomePage onSelectBillType={handleSelectBillType} />
