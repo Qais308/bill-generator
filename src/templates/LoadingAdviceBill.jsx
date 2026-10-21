@@ -439,7 +439,7 @@ export default function LoadingAdviceBill({
             min-height: 1.35em !important;
           }
           .bill-dots {
-            background-image: url("data:image/svg+xml,%3Csvg width='3.5' height='2' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1' cy='1' r='0.6' fill='black'/%3E%3C/svg%3E") !important;
+            background-image: url("data:image/svg+xml,%3Csvg width='6' height='2' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1' cy='1' r='0.9' fill='black'/%3E%3C/svg%3E") !important;
             background-repeat: repeat-x !important;
             background-position: left bottom !important;
             transform: translateY(2px) !important;
