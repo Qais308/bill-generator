@@ -426,7 +426,7 @@ export default function LoadingAdviceBill({
           text-align: center;
         }
 
-        /* Tighter line spacing ONLY on mobile screens */
+         /* Tighter line spacing ONLY on mobile screens */
         @media (max-width: 768px) {
           .bill-fields {
             gap: 0.35cqw !important;
@@ -446,10 +446,11 @@ export default function LoadingAdviceBill({
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
-          .company-logo {
-            height: 1.8em !important;
-            max-height: 1.8em !important;
-          }
+            .company-logo {
+    height: 1.8em !important;
+    max-height: 1.8em !important;
+  }
+            
         }
 
         @media (max-width: 480px) {
