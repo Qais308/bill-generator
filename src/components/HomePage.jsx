@@ -46,8 +46,8 @@ export default function HomePage({ onSelectBillType }) {
           />
 
           <BillTypeCard
-            title="Truck Loading Letter"
-            description="Prepare a truck loading instruction letter with destination, weight, freight, and advance details."
+            title="Loading Advice Bill"
+            description="Prepare a loading advice bill with destination, weight, freight, and advance details."
             icon="truck"
             onClick={() => onSelectBillType("loading")}
           />

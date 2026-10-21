@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { ArrowLeft, Download, ImagePlus, RotateCcw } from "lucide-react";
 
 const defaultBill = {
@@ -44,15 +44,28 @@ const moneyFields = [
   ["balance", "Balance"],
 ];
 
+const STORAGE_KEY = "commission_bill_data";
+
 export default function CommissionBill({
   data: externalData,
   onChange: externalOnChange,
   onBack,
 }) {
-  const [bill, setBill] = useState(() => ({
+  const [bill, setBill] = useState(() => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      return { ...defaultBill, ...JSON.parse(saved) };
+    }
+  } catch (e) {
+    console.error("Failed to load saved bill data", e);
+  }
+  return {
     ...defaultBill,
     ...(externalData || {}),
-  }));
+  };
+});
+
   const [logo, setLogo] = useState("");
   const [logoWidth, setLogoWidth] = useState(100);
   const [logoPosition, setLogoPosition] = useState("left");
@@ -63,6 +76,15 @@ export default function CommissionBill({
     () => localStorage.getItem("commissionBillSignature") || ""
   );
   const signatureInput = useRef(null);
+
+  // Save form data to localStorage whenever bill state changes
+useEffect(() => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(bill));
+  } catch (e) {
+    console.error("Failed to save bill data", e);
+  }
+}, [bill]);
 
   const currentBill = externalData
     ? { ...defaultBill, ...externalData }
@@ -207,16 +229,17 @@ export default function CommissionBill({
         }
 
         .company-logo {
-          flex: 0 0 auto;
-          object-fit: contain;
-          max-height: 100%;
-          max-width: 100%;
-          margin: 0;
-        }
+  flex: 0 0 auto;
+  object-fit: contain;
+  height: 2.2em !important; /* Locks max height proportional to company name text height */
+  max-height: 2.2em !important;
+  width: auto !important;   /* Maintains aspect ratio without horizontal stretching */
+  margin: 0;
+}
 
         .company-name {
           font-weight: 900;
-          font-size: 3.8cqw;
+          font-size: 5cqw;
           line-height: 1;
           white-space: nowrap;
           letter-spacing: -0.04em;
@@ -457,6 +480,10 @@ export default function CommissionBill({
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
+            .company-logo {
+    height: 1.8em !important;
+    max-height: 1.8em !important;
+  }
             
         }
 
@@ -598,11 +625,10 @@ export default function CommissionBill({
 
       {/* Responsive layout: Side-by-side on desktop (Form Left, Preview Right), stacked on mobile */}
       <div
-        className={`mx-auto max-w-7xl ${
-          showEditor
-            ? "grid grid-cols-1 lg:grid-cols-2 gap-6 items-start"
-            : "max-w-4xl"
-        }`}
+        className={`mx-auto max-w-7xl ${showEditor
+          ? "grid grid-cols-1 lg:grid-cols-2 gap-6 items-start"
+          : "max-w-4xl"
+          }`}
       >
         {showEditor && (
           <section className="no-print rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6 lg:sticky lg:top-5">
@@ -697,33 +723,6 @@ export default function CommissionBill({
               )}
             </div>
 
-            <label className="mb-4 block text-sm text-gray-700">
-              <span className="mb-2 flex items-center justify-between font-medium">
-                Logo width <span>{logoWidth}px</span>
-              </span>
-              <input
-                type="range"
-                min="40"
-                max="160"
-                step="5"
-                value={logoWidth}
-                onChange={(event) => setLogoWidth(Number(event.target.value))}
-                className="w-full accent-blue-600"
-              />
-            </label>
-
-            <label className="mb-4 block text-sm text-gray-700">
-              <span className="mb-2 block font-medium">Logo position</span>
-              <select
-                value={logoPosition}
-                onChange={(event) => setLogoPosition(event.target.value)}
-                className="bill-input"
-              >
-                <option value="left">Left of company name</option>
-                <option value="right">Right of company name</option>
-                <option value="top">Above company name</option>
-              </select>
-            </label>
 
             <label className="mb-4 block text-sm text-gray-700">
               <span className="mb-2 block font-medium">
@@ -821,19 +820,12 @@ export default function CommissionBill({
               </div>
             </div>
 
-            <div
-              className="company-row"
-              style={{
-                flexDirection: logoPosition === "top" ? "column" : "row",
-                marginTop: logoPosition === "top" ? "0.3cqw" : "0.5cqw",
-              }}
-            >
-              {logoPosition === "left" && logo && (
+            <div className="company-row">
+              {logo && (
                 <img
                   src={logo}
                   alt="Company logo"
                   className="company-logo"
-                  style={{ width: `${logoWidth}px` }}
                 />
               )}
 
@@ -843,24 +835,6 @@ export default function CommissionBill({
               >
                 {currentBill.companyName}
               </div>
-
-              {logoPosition === "right" && logo && (
-                <img
-                  src={logo}
-                  alt="Company logo"
-                  className="company-logo"
-                  style={{ width: `${logoWidth}px` }}
-                />
-              )}
-
-              {logoPosition === "top" && logo && (
-                <img
-                  src={logo}
-                  alt="Company logo"
-                  className="company-logo"
-                  style={{ width: `${logoWidth}px` }}
-                />
-              )}
             </div>
 
             <div className="company-subtitle">{currentBill.subtitle}</div>
@@ -876,8 +850,8 @@ export default function CommissionBill({
                 <span className="bill-value">
                   {currentBill.date
                     ? new Date(
-                        `${currentBill.date}T00:00:00`
-                      ).toLocaleDateString("en-GB")
+                      `${currentBill.date}T00:00:00`
+                    ).toLocaleDateString("en-GB")
                     : ""}
                 </span>
               </span>

@@ -1,15 +1,46 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "./components/Navbar";
 import HomePage from "./components/HomePage";
 import CommissionBill from "./templates/CommissionBill";
+import LoadingAdviceBill from "./templates/LoadingAdviceBill";
 import "./index.css";
 
 export default function App() {
-  const [page, setPage] = useState("home");
-  const [selectedBillType, setSelectedBillType] = useState(null);
+  const [page, setPage] = useState(() => {
+    return localStorage.getItem("app_page") || "home";
+  });
+  const [selectedBillType, setSelectedBillType] = useState(() => {
+    return localStorage.getItem("app_bill_type") || null;
+  });
+
+  // Sync page and bill type changes to localStorage
+  useEffect(() => {
+    if (page === "home") {
+      localStorage.removeItem("app_page");
+      localStorage.removeItem("app_bill_type");
+    } else {
+      localStorage.setItem("app_page", page);
+      if (selectedBillType) {
+        localStorage.setItem("app_bill_type", selectedBillType);
+      }
+    }
+  }, [page, selectedBillType]);
+
+  // Back-button handler for browser history management
+  useEffect(() => {
+    const handlePopState = () => {
+      setPage("home");
+      setSelectedBillType(null);
+      localStorage.removeItem("app_page");
+      localStorage.removeItem("app_bill_type");
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   function handleSelectBillType(type) {
+    window.history.pushState({ page: "bill", type }, "");
     setSelectedBillType(type);
     setPage("bill");
   }
@@ -17,13 +48,14 @@ export default function App() {
   function goHome() {
     setPage("home");
     setSelectedBillType(null);
+    localStorage.removeItem("app_page");
+    localStorage.removeItem("app_bill_type");
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar
         onGoHome={goHome}
-        onGoSettings={() => {}}
       />
 
       {page === "home" && (
@@ -35,19 +67,7 @@ export default function App() {
       )}
 
       {page === "bill" && selectedBillType === "loading" && (
-        <section className="mx-auto max-w-6xl px-4 py-8 sm:px-8">
-          <button
-            type="button"
-            onClick={goHome}
-            className="mb-6 rounded-lg px-4 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-50"
-          >
-            ← Back to bill types
-          </button>
-
-          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-            The Truck Loading Letter template will be built next.
-          </div>
-        </section>
+        <LoadingAdviceBill onBack={goHome} />
       )}
     </div>
   );
