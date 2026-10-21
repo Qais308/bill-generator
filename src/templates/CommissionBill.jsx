@@ -302,8 +302,7 @@ export default function CommissionBill({
           min-width: 5px;
           min-height: 1.4em;
           position: relative;
-          background-image: radial-gradient(circle, black 55%, transparent 60%);
-          background-size: 6px 100%;
+          background-image: url("data:image/svg+xml,%3Csvg width='5' height='3' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1' cy='1.5' r='0.7' fill='black'/%3E%3C/svg%3E");
           background-repeat: repeat-x;
           background-position: left bottom;
           display: flex;
@@ -519,8 +518,7 @@ export default function CommissionBill({
           min-width: 5px;
           min-height: 1.4em;
           position: relative;
-          background-image: radial-gradient(circle, black 55%, transparent 60%);
-          background-size: 6px 100%;
+          background-image: url("data:image/svg+xml,%3Csvg width='5' height='3' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1' cy='1.5' r='0.7' fill='black'/%3E%3C/svg%3E");
           background-repeat: repeat-x;
           background-position: left bottom;
           display: flex;
