@@ -400,7 +400,7 @@ export default function CommissionBill({
     .company-logo {
   flex: 0 0 auto;
   object-fit: contain;
-  height: 8cqw !important;    
+  height: 9cqw !important;    
   max-height: 10cqw !important; 
   width: auto !important;     
   margin: 0;
@@ -421,7 +421,7 @@ export default function CommissionBill({
           text-align: center;
           font-size: 1.35em;
           font-style: italic;
-          font-weight: 600;
+          font-weight: 500;
           line-height: 1.2;
         }
 
@@ -429,7 +429,7 @@ export default function CommissionBill({
           text-align: center;
           font-size: 1.25em;
           font-style: italic;
-          font-weight: 600;
+          font-weight: 500;
         }
 
         .company-loading {
@@ -441,12 +441,14 @@ export default function CommissionBill({
         .company-email {
           text-align: center;
           font-size: 1.25em;
-          font-weight: 550;
+          font-weight: 500;
           overflow-wrap: anywhere;
         }
 
         /* Address and date */
         .bill-address {
+         background-color: #0b1f3a
+         color: #ffffff;
           margin: 0.6cqw -0.3cqw 0;
           padding: 0.4cqw 0;
           text-align: center;
@@ -706,6 +708,12 @@ export default function CommissionBill({
 
           body * {
             visibility: hidden;
+          }
+            .bill-address {
+            background-color: #0b1f3a !important;
+            color: #ffffff !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
 
           .bill-wrapper,
@@ -1010,7 +1018,7 @@ export default function CommissionBill({
 
             <div
               className="bill-address"
-              style={{ color: currentBill.company.headerTextColor || "#111" }}
+              style={{ color: '#ffffff', backgroundColor: '#0b1f3a' }}
             >
               {currentBill.company.address}
             </div>
