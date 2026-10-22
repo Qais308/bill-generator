@@ -440,7 +440,7 @@ export default function CommissionBill({
         .company-email {
           text-align: center;
           font-size: 1.25em;
-          font-weight: 500;
+          font-weight: 600;
           overflow-wrap: anywhere;
         }
 
