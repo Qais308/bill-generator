@@ -1,25 +1,21 @@
 import { useState, useEffect } from "react";
 import Navbar from "./components/Navbar";
 import HomePage from "./components/HomePage";
+import CompanyDetailsPage from "./components/CompanyDetailsPage";
 import CommissionBill from "./templates/CommissionBill";
 import LoadingAdviceBill from "./templates/LoadingAdviceBill";
 import "./index.css";
 
 export default function App() {
-  // 1. ALWAYS start on "home" when the app is freshly opened/refreshed
   const [page, setPage] = useState("home");
   const [selectedBillType, setSelectedBillType] = useState(null);
 
-  // 2. Handle browser/mobile back button gracefully
   useEffect(() => {
-    // Push an initial history entry when the app loads
     window.history.replaceState({ page: "home" }, "");
 
-    const handlePopState = (event) => {
-      // If the user clicks back while on a bill page, return home instead of exiting site
+    const handlePopState = () => {
       setPage("home");
       setSelectedBillType(null);
-      // Ensure history state stays synchronized
       window.history.replaceState({ page: "home" }, "");
     };
 
@@ -28,10 +24,14 @@ export default function App() {
   }, []);
 
   function handleSelectBillType(type) {
-    // Push a new history state when entering a bill so the back button can catch it
     window.history.pushState({ page: "bill", type }, "");
     setSelectedBillType(type);
     setPage("bill");
+  }
+
+  function handleOpenCompanyDetails() {
+    window.history.pushState({ page: "company" }, "");
+    setPage("company");
   }
 
   function goHome() {
@@ -41,11 +41,18 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#fdfbf7]">
       <Navbar onGoHome={goHome} />
 
       {page === "home" && (
-        <HomePage onSelectBillType={handleSelectBillType} />
+        <HomePage
+          onSelectBillType={handleSelectBillType}
+          onOpenCompanySettings={handleOpenCompanyDetails}
+        />
+      )}
+
+      {page === "company" && (
+        <CompanyDetailsPage onBack={goHome} />
       )}
 
       {page === "bill" && selectedBillType === "commission" && (
