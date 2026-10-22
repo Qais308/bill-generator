@@ -5,7 +5,6 @@ import { getSavedCompanyDetails } from "../components/CompanyDetailsPage";
 const createEmptyBill = () => ({
   billNumber: "",
   date: new Date().toISOString().slice(0, 10),
-  loadingText: "",
   recipient: "",
   recipientAddress: "",
   truckNumber: "",
@@ -908,7 +907,6 @@ export default function CommissionBill({
               </h2>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {[
-                  ["loadingText", "Loading heading"],
                   ["billNumber", "Bill number (No.)"],
                   ["date", "Date", "date"],
                   ["recipient", "To / Customer name"],
@@ -1008,7 +1006,7 @@ export default function CommissionBill({
             >
               {currentBill.company.regions}
             </div>
-            <div className="company-loading">{currentBill.loadingText}</div>
+            <div className="company-loading">Loading For All Over India</div>
             <div
               className="company-email"
               style={{ color: currentBill.company.headerTextColor || "#111" }}
