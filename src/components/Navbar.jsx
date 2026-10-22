@@ -10,7 +10,7 @@ export default function Navbar({ onGoHome }) {
         aria-label="Go to home page"
         className="flex items-center gap-3 rounded-lg text-left cursor-pointer"
       >
-        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-400 text-amber-950 shadow-xs">
+        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-300 text-amber-950 shadow-xs">
           <FileText size={22} />
         </span>
 

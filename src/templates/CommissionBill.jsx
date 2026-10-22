@@ -1,18 +1,11 @@
 import { useRef, useState, useEffect } from "react";
-import { ArrowLeft, Download, ImagePlus, RotateCcw } from "lucide-react";
+import { ArrowLeft, Download, ImagePlus, RotateCcw, Building2, Save, BookmarkCheck, ArrowRight } from "lucide-react";
+import { getSavedCompanyDetails } from "../components/CompanyDetailsPage";
 
-const defaultBill = {
-  billNumber: "1074",
-  serialNumber: "786",
+const createEmptyBill = () => ({
+  billNumber: "",
   date: new Date().toISOString().slice(0, 10),
-  companyName: "HIMMAT ROAD WAYS",
-  address: "BASUDEVPUR, HPL LINK ROAD, HALDIA, 721602",
-  phones: "9002786772\n9002786561\n9932017824",
-  subtitle:
-    "Transport Contractors Commission Agent & Lorry Suppliers",
-  regions: "Maharashtra, Assam, Gujrat, Karnataka all over India",
-  loadingText: "LOADING FOR ALL OVER INDIA",
-  email: "himmatroadways@gmail.com",
+  loadingText: "",
   recipient: "",
   recipientAddress: "",
   truckNumber: "",
@@ -22,7 +15,7 @@ const defaultBill = {
   weight: "",
   rate: "",
   freight: "",
-  tripAllowance: "",
+  tirpallowance: "",
   cash: "",
   discount: "",
   oil: "",
@@ -30,11 +23,12 @@ const defaultBill = {
   commission: "",
   neft: "",
   balance: "",
-};
+  signature: "",
+});
 
 const moneyFields = [
   ["freight", "Freight"],
-  ["tripAllowance", "Tripal"],
+  ["tirpallowance", "Tirpal"],
   ["cash", "Cash"],
   ["discount", "Cash Discount"],
   ["oil", "Oil"],
@@ -44,117 +38,292 @@ const moneyFields = [
   ["balance", "Balance"],
 ];
 
-const STORAGE_KEY = "commission_bill_data";
+const HISTORY_STORAGE_KEY = "commission_bill_history";
+const DRAFT_STORAGE_KEY = "commission_bill_draft";
 
 export default function CommissionBill({
   data: externalData,
   onChange: externalOnChange,
   onBack,
+  onOpenCompanySettings,
+  onUnsavedChangesChange,
 }) {
-  const [bill, setBill] = useState(() => {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      return { ...defaultBill, ...JSON.parse(saved) };
-    }
-  } catch (e) {
-    console.error("Failed to load saved bill data", e);
-  }
-  return {
-    ...defaultBill,
-    ...(externalData || {}),
-  };
-});
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-  const [logo, setLogo] = useState("");
-  const [logoWidth, setLogoWidth] = useState(100);
-  const [logoPosition, setLogoPosition] = useState("left");
-  const [companyColor, setCompanyColor] = useState("#d51f20");
+  // Load saved draft if explicitly saved, otherwise start blank
+  const [bill, setBill] = useState(() => {
+    try {
+      const savedDraft = localStorage.getItem(DRAFT_STORAGE_KEY);
+      if (savedDraft) {
+        return { ...JSON.parse(savedDraft), company: getSavedCompanyDetails() };
+      }
+    } catch (e) {
+      console.error("Failed to load draft", e);
+    }
+    return {
+      ...createEmptyBill(),
+      ...(externalData || {}),
+      company: getSavedCompanyDetails(),
+    };
+  });
+
   const [showEditor, setShowEditor] = useState(true);
-  const logoInput = useRef(null);
-  const [signature, setSignature] = useState(
-    () => localStorage.getItem("commissionBillSignature") || ""
-  );
+  const [isDraftSaved, setIsDraftSaved] = useState(false);
   const signatureInput = useRef(null);
 
-  // Save form data to localStorage whenever bill state changes
-useEffect(() => {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(bill));
-  } catch (e) {
-    console.error("Failed to save bill data", e);
-  }
-}, [bill]);
+  // Sync unsaved changes with App.js for gesture interception
+  useEffect(() => {
+    onUnsavedChangesChange?.(hasUnsavedChanges);
+  }, [hasUnsavedChanges, onUnsavedChangesChange]);
+
+  // Keep master company branding updated
+  useEffect(() => {
+    const companyMaster = getSavedCompanyDetails();
+    setBill((prev) => ({ ...prev, company: companyMaster }));
+  }, []);
+
+  // 🛡️ ONLY keep browser tab close / refresh warning here (App.js handles swipe/back gestures)
+  useEffect(() => {
+    function handleBeforeUnload(e) {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    }
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasUnsavedChanges]);
 
   const currentBill = externalData
-    ? { ...defaultBill, ...externalData }
+    ? { ...createEmptyBill(), ...externalData, company: getSavedCompanyDetails() }
     : bill;
 
   function updateField(key, value) {
     setBill((previous) => ({ ...previous, [key]: value }));
+    setHasUnsavedChanges(true);
+    setIsDraftSaved(false);
     externalOnChange?.(key, value);
   }
 
-  function handleLogoUpload(event) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      alert("Please select an image file.");
-      return;
+  function handleBackNavigation() {
+    if (hasUnsavedChanges) {
+      const confirmLeave = window.confirm(
+        "You have unsaved changes! Are you sure you want to leave without saving?"
+      );
+      if (!confirmLeave) return;
     }
+    onBack?.();
+  }
 
-    const reader = new FileReader();
-    reader.onload = () => setLogo(reader.result);
-    reader.readAsDataURL(file);
+  function handleOpenSettingsWithCheck() {
+    if (hasUnsavedChanges) {
+      const confirmLeave = window.confirm(
+        "You have unsaved changes! Are you sure you want to leave to configure company settings?"
+      );
+      if (!confirmLeave) return;
+    }
+    onOpenCompanySettings?.();
+  }
+
+  function handleSaveDraft() {
+    try {
+      localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(bill));
+      setIsDraftSaved(true);
+      setHasUnsavedChanges(false);
+      setTimeout(() => setIsDraftSaved(false), 3000);
+    } catch (e) {
+      console.error("Failed to save draft", e);
+    }
   }
 
   function handleSignatureUpload(event) {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const file = event.target.files?.[0];
+  if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
-      alert("Please select an image file.");
-      return;
-    }
-
-    const reader = new FileReader();
-
-    reader.onload = () => {
-      try {
-        localStorage.setItem(
-          "commissionBillSignature",
-          reader.result
-        );
-        setSignature(reader.result);
-      } catch {
-        alert("The image is too large to save. Please use a smaller image.");
-      }
-    };
-
-    reader.readAsDataURL(file);
+  // Enforce max upload limit (500KB)
+  if (file.size > 500 * 1024) {
+    alert("Signature image is too large! Please choose an image under 500KB.");
+    return;
   }
 
-  function removeSignature() {
-    localStorage.removeItem("commissionBillSignature");
-    setSignature("");
+  if (!file.type.startsWith("image/")) {
+    alert("Please select a valid image file.");
+    return;
+  }
 
-    if (signatureInput.current) {
-      signatureInput.current.value = "";
-    }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.src = e.target.result;
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const MAX_WIDTH = 300; // Signatures don't need to be larger than 300px wide
+      const scale = MAX_WIDTH / img.width;
+      canvas.width = MAX_WIDTH;
+      canvas.height = img.height * scale;
+
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.7);
+
+      setBill((previous) => ({ ...previous, signature: compressedDataUrl }));
+      setHasUnsavedChanges(true);
+    };
+  };
+  reader.readAsDataURL(file);
+}
+
+  function removeSignature() {
+    setBill((previous) => ({ ...previous, signature: "" }));
+    setHasUnsavedChanges(true);
+    if (signatureInput.current) signatureInput.current.value = "";
   }
 
   function printBill() {
+    try {
+      let existingHistory = [];
+      const savedHistory = localStorage.getItem(HISTORY_STORAGE_KEY);
+      if (savedHistory) {
+        existingHistory = JSON.parse(savedHistory);
+      }
+      const newEntry = {
+        id: Date.now(),
+        savedAt: new Date().toLocaleString(),
+        billData: currentBill,
+      };
+      const updatedHistory = [newEntry, ...existingHistory].slice(0, 10);
+      localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(updatedHistory));
+    } catch (e) {
+      console.error("Failed to save bill to history", e);
+    }
+
+    localStorage.removeItem(DRAFT_STORAGE_KEY);
+    setHasUnsavedChanges(false);
     window.print();
+
+    setBill({
+      ...createEmptyBill(),
+      company: getSavedCompanyDetails(),
+    });
+  }
+  function updateField(key, value) {
+    setBill((previous) => ({ ...previous, [key]: value }));
+    setHasUnsavedChanges(true);
+    setIsDraftSaved(false);
+    externalOnChange?.(key, value);
   }
 
-  function clearLogo() {
-    setLogo("");
-    if (logoInput.current) logoInput.current.value = "";
+  function handleBackNavigation() {
+    if (hasUnsavedChanges) {
+      const confirmLeave = window.confirm(
+        "You have unsaved changes! Are you sure you want to leave without saving?"
+      );
+      if (!confirmLeave) return;
+    }
+    onBack?.();
+  }
+
+  function handleOpenSettingsWithCheck() {
+    if (hasUnsavedChanges) {
+      const confirmLeave = window.confirm(
+        "You have unsaved changes! Are you sure you want to leave to configure company settings?"
+      );
+      if (!confirmLeave) return;
+    }
+    onOpenCompanySettings?.();
+  }
+
+  function handleSaveDraft() {
+    try {
+      localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(bill));
+      setIsDraftSaved(true);
+      setHasUnsavedChanges(false);
+      setTimeout(() => setIsDraftSaved(false), 3000);
+    } catch (e) {
+      console.error("Failed to save draft", e);
+    }
+  }
+
+  function handleSignatureUpload(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  // Enforce max upload limit (500KB)
+  if (file.size > 500 * 1024) {
+    alert("Signature image is too large! Please choose an image under 500KB.");
+    return;
+  }
+
+  if (!file.type.startsWith("image/")) {
+    alert("Please select a valid image file.");
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.src = e.target.result;
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const MAX_WIDTH = 300; // Signatures don't need to be larger than 300px wide
+      const scale = MAX_WIDTH / img.width;
+      canvas.width = MAX_WIDTH;
+      canvas.height = img.height * scale;
+
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.7);
+
+      setBill((previous) => ({ ...previous, signature: compressedDataUrl }));
+      setHasUnsavedChanges(true);
+    };
+  };
+  reader.readAsDataURL(file);
+}
+  function removeSignature() {
+    setBill((previous) => ({ ...previous, signature: "" }));
+    setHasUnsavedChanges(true);
+    if (signatureInput.current) signatureInput.current.value = "";
+  }
+
+  function printBill() {
+    // 1. Save downloaded bill record to history list
+    try {
+      let existingHistory = [];
+      const savedHistory = localStorage.getItem(HISTORY_STORAGE_KEY);
+      if (savedHistory) {
+        existingHistory = JSON.parse(savedHistory);
+      }
+      const newEntry = {
+        id: Date.now(),
+        savedAt: new Date().toLocaleString(),
+        billData: currentBill,
+        signature,
+      };
+      const updatedHistory = [newEntry, ...existingHistory].slice(0, 10);
+      localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(updatedHistory));
+    } catch (e) {
+      console.error("Failed to save bill to history", e);
+    }
+
+    // 2. Clear explicit draft storage so it doesn't persist on reopen
+    localStorage.removeItem(DRAFT_STORAGE_KEY);
+    setHasUnsavedChanges(false);
+
+    // 3. Trigger browser print / PDF download
+    window.print();
+
+    // 4. Reset form fields to blank immediately
+    setBill({
+      ...createEmptyBill(),
+      company: getSavedCompanyDetails(),
+    });
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 px-3 py-5 sm:px-6 sm:py-8">
+    <main className="min-h-screen bg-[#fdfbf7] px-3 py-5 sm:px-6 sm:py-8">
       <style>{`
         /* Container Query driven paper proportions */
         .bill-wrapper {
@@ -228,17 +397,20 @@ useEffect(() => {
           min-height: 4.5cqw;
         }
 
-        .company-logo {
+    .company-logo {
   flex: 0 0 auto;
   object-fit: contain;
-  height: 2.2em !important; /* Locks max height proportional to company name text height */
-  max-height: 2.2em !important;
-  width: auto !important;   /* Maintains aspect ratio without horizontal stretching */
+  height: 8cqw !important;    
+  max-height: 10cqw !important; 
+  width: auto !important;     
   margin: 0;
 }
 
         .company-name {
-          font-weight: 900;
+          font-family: 'Kanit', sans-serif;
+  font-weight: 850; /* Maximum thickness */
+  text-transform: uppercase; /* Forces all caps like the image */
+  letter-spacing: 0.5px;
           font-size: 5cqw;
           line-height: 1;
           white-space: nowrap;
@@ -402,8 +574,8 @@ useEffect(() => {
         .bill-notice-text {
           font-size: 1.2em;
           font-weight: 550;
-          line-height: 1.3;
-          padding: 0.4cqw 0.5cqw 0.6cqw;
+          line-height: 1.2;
+          padding: 0.4cqw 0.5cqw 0.2cqw;
         }
 
         /* Signature + company name container */
@@ -480,10 +652,10 @@ useEffect(() => {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
-            .company-logo {
-    height: 1.8em !important;
-    max-height: 1.8em !important;
-  }
+    .company-logo {
+  height: 3.5em !important;     /* 👈 Increase this from 1.8em to a larger value (e.g., 3.5em or 4em) */
+  max-height: 4em !important;   /* 👈 Make sure max-height is higher so it has room to grow */
+}
             
         }
 
@@ -494,6 +666,9 @@ useEffect(() => {
           .bill-signature-container > div:last-child {
             font-size: 9px !important;
           }
+            .bill-notice-text {
+          padding: 0.4cqw 0.5cqw 0.1cqw;
+        }
         }
 
         /* Form inputs */
@@ -589,8 +764,8 @@ useEffect(() => {
           {onBack && (
             <button
               type="button"
-              onClick={onBack}
-              className="flex items-center gap-1 rounded-lg px-3 py-2 text-sm text-blue-700 transition hover:bg-blue-100"
+              onClick={handleBackNavigation}
+              className="flex items-center gap-1 rounded-xl border border-amber-200/80 bg-white/80 px-3.5 py-2 text-sm font-semibold text-amber-900 transition hover:bg-amber-100/60 cursor-pointer shadow-2xs"
             >
               <ArrowLeft size={17} /> Back
             </button>
@@ -599,31 +774,41 @@ useEffect(() => {
             <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">
               Commission Bill
             </h1>
-            <p className="text-xs text-gray-500 sm:text-sm">
-              Enter details and preview the exact A4 bill layout.
+            <p className="text-xs text-amber-800/80 sm:text-sm font-medium">
+              Enter transaction details. Save draft if leaving half-filled.
             </p>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 items-center">
+          {/* Save Draft Button */}
+          <button
+            type="button"
+            onClick={handleSaveDraft}
+            className="flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-100/60 px-3.5 py-2 text-sm font-bold text-amber-900 hover:bg-amber-200 cursor-pointer transition shadow-2xs"
+          >
+            {isDraftSaved ? <BookmarkCheck size={16} className="text-emerald-700" /> : <Save size={16} />}
+            <span>{isDraftSaved ? "Draft Saved!" : "Save Draft"}</span>
+          </button>
+
           <button
             type="button"
             onClick={() => setShowEditor((value) => !value)}
-            className="rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50"
+            className="rounded-xl border border-amber-200/80 bg-white/90 px-4 py-2 text-sm font-semibold text-amber-900 hover:bg-amber-50 cursor-pointer transition shadow-2xs"
           >
             {showEditor ? "Hide editor" : "Edit details"}
           </button>
           <button
             type="button"
             onClick={printBill}
-            className="flex items-center gap-2 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:from-cyan-600 hover:to-blue-800"
+            className="flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-amber-950 shadow-sm transition hover:bg-amber-400 cursor-pointer"
           >
             <Download size={16} /> Print / Save PDF
           </button>
         </div>
       </div>
 
-      {/* Responsive layout: Side-by-side on desktop (Form Left, Preview Right), stacked on mobile */}
+      {/* Responsive layout */}
       <div
         className={`mx-auto max-w-7xl ${showEditor
           ? "grid grid-cols-1 lg:grid-cols-2 gap-6 items-start"
@@ -631,171 +816,124 @@ useEffect(() => {
           }`}
       >
         {showEditor && (
-          <section className="no-print rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6 lg:sticky lg:top-5">
-            <h2 className="mb-3 font-semibold text-gray-900">
-              Company branding
-            </h2>
+          <section className="no-print rounded-2xl border border-amber-200/80 bg-white/90 p-4 shadow-sm sm:p-6 lg:sticky lg:top-5 backdrop-blur-md space-y-6">
 
-            <div className="mb-4 rounded-xl border border-dashed border-blue-300 bg-blue-50/50 p-4">
-              <label className="mb-2 block text-sm font-medium text-gray-800">
-                Upload signature / stamp
-              </label>
-
-              <input
-                ref={signatureInput}
-                type="file"
-                accept="image/*"
-                onChange={handleSignatureUpload}
-                className="hidden"
-              />
-
-              <p className="mt-2 text-xs text-gray-500">
-                PNG, JPG, or another browser-supported image format.
-              </p>
-
-              {signature && (
-                <div className="mt-3 flex items-center gap-3">
-                  <img
-                    src={signature}
-                    alt="Saved signature or stamp"
-                    className="h-12 max-w-32 object-contain"
-                  />
-                  <button
-                    type="button"
-                    onClick={removeSignature}
-                    className="flex items-center gap-1 text-sm text-red-600 hover:text-red-800"
-                  >
-                    <RotateCcw size={14} /> Remove signature / stamp
-                  </button>
+            <div
+              onClick={handleOpenSettingsWithCheck}
+              className="group relative flex flex-col justify-between rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50/60 via-white to-white p-6 shadow-sm shadow-amber-900/5 transition-all hover:border-amber-400 hover:shadow-md cursor-pointer"
+            >
+              <div>
+                <div className="mb-4 flex items-center justify-between">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-100 text-amber-800 transition-transform group-hover:scale-105">
+                    <Building2 size={22} />
+                  </span>
+                  <span className="rounded-full bg-amber-100/70 px-2.5 py-0.5 text-[11px] font-semibold text-amber-800">
+                    Setup First
+                  </span>
                 </div>
-              )}
 
-              {!signature && (
-                <button
-                  type="button"
-                  onClick={() => signatureInput.current?.click()}
-                  className="mt-3 flex items-center gap-2 rounded-lg bg-gradient-to-br from-cyan-100 to-blue-200 px-3 py-2 text-sm font-medium text-blue-800 ring-1 ring-blue-300 transition hover:ring-2 hover:ring-blue-400"
-                >
-                  <ImagePlus size={16} /> Choose signature
-                </button>
-              )}
-            </div>
+                <h3 className="text-base font-bold text-gray-900 group-hover:text-amber-900">
+                  Company Profile & Details
+                </h3>
 
-            <div className="mb-4 rounded-xl border border-dashed border-blue-300 bg-blue-50/50 p-4">
-              <label className="mb-2 block text-sm font-medium text-gray-800">
-                Upload company logo
-              </label>
-              <input
-                ref={logoInput}
-                type="file"
-                accept="image/*"
-                onChange={handleLogoUpload}
-                className="block w-full text-sm text-gray-600 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-100 file:px-3 file:py-2 file:font-medium file:text-blue-700 hover:file:bg-blue-200"
-              />
-              <p className="mt-2 text-xs text-gray-500">
-                PNG, JPG, or another browser-supported image format.
-              </p>
-
-              {logo && (
-                <div className="mt-3 flex items-center gap-3">
-                  <img
-                    src={logo}
-                    alt="Company logo preview"
-                    className="h-12 max-w-32 object-contain"
-                  />
-                  <button
-                    type="button"
-                    onClick={clearLogo}
-                    className="flex items-center gap-1 text-sm text-red-600 hover:text-red-800"
-                  >
-                    <RotateCcw size={14} /> Remove logo
-                  </button>
-                </div>
-              )}
-              {!logo && (
-                <button
-                  type="button"
-                  onClick={() => logoInput.current?.click()}
-                  className="mt-3 flex items-center gap-2 rounded-lg bg-gradient-to-br from-cyan-100 to-blue-200 px-3 py-2 text-sm font-medium text-blue-800 ring-1 ring-blue-300 transition hover:ring-2 hover:ring-blue-400"
-                >
-                  <ImagePlus size={16} /> Choose logo
-                </button>
-              )}
-            </div>
-
-
-            <label className="mb-4 block text-sm text-gray-700">
-              <span className="mb-2 block font-medium">
-                Company name text color
-              </span>
-              <div className="flex items-center gap-3">
-                <input
-                  type="color"
-                  value={companyColor}
-                  onChange={(event) => setCompanyColor(event.target.value)}
-                  className="h-10 w-14 cursor-pointer rounded border border-gray-300 bg-white p-1"
-                />
-                <input
-                  value={companyColor}
-                  onChange={(event) => setCompanyColor(event.target.value)}
-                  className="bill-input"
-                  aria-label="Company name hex color"
-                />
+                <p className="mt-2 text-xs leading-relaxed text-gray-500">
+                  Configure default company name, address, phone numbers, and signature branding applied across all bills.
+                </p>
               </div>
-            </label>
 
-            <div className="my-6 border-t border-gray-200"></div>
+              <div className="mt-6 flex items-center gap-1.5 text-xs font-semibold text-amber-800">
+                <span>Manage details</span>
+                <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
+              </div>
+            </div>
 
-            <h2 className="mb-3 font-semibold text-gray-900">
-              Bill details
-            </h2>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 mb-6">
-              {[
-                ["companyName", "Company name"],
-                ["subtitle", "Company subtitle"],
-                ["regions", "Regions / service area"],
-                ["loadingText", "Loading heading"],
-                ["email", "Email address"],
-                ["address", "Company address"],
-                ["phones", "Phone numbers (Mob.)"],
-                ["billNumber", "Bill number (No.)"],
-                ["serialNumber", "Top serial number"],
-                ["date", "Date", "date"],
-                ["recipient", "To / Customer name"],
-                ["recipientAddress", "Customer address (second line)"],
-                ["truckNumber", "Truck number"],
-                ["from", "From destination"],
-                ["to", "To destination"],
-                ["transport", "Transport name"],
-                ["weight", "Weight"],
-                ["rate", "Rate (Rs.)"],
-                ...moneyFields,
-              ].map(([key, label, type]) => (
-                <label key={key} className={`block text-sm text-gray-700 ${key === "phones" || key === "recipientAddress" ? "sm:col-span-2" : ""}`}>
-                  <span className="mb-1 block font-medium">{label}</span>
-                  {key === "phones" ? (
-                    <textarea
-                      rows={2}
-                      value={currentBill[key] ?? ""}
-                      onChange={(event) => updateField(key, event.target.value)}
-                      className="bill-input"
+            <div>
+              <h2 className="mb-3 font-bold text-gray-900">
+                Upload signature / stamp
+              </h2>
+
+              <div className="rounded-xl border border-dashed border-amber-200 bg-amber-50/30 p-4">
+                <input
+                  ref={signatureInput}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleSignatureUpload}
+                  className="hidden"
+                />
+
+                <p className="text-xs text-gray-500">
+                  PNG, JPG, or another browser-supported image format.
+                </p>
+
+                {currentBill.signature && (
+                  <div className="mt-3 flex items-center gap-3">
+                    <img
+                      src={currentBill.signature}
+                      alt="Saved signature or stamp"
+                      className="h-12 max-w-32 object-contain"
                     />
-                  ) : (
+                    <button
+                      type="button"
+                      onClick={removeSignature}
+                      className="flex items-center gap-1 text-sm text-red-600 hover:text-red-800 font-medium"
+                    >
+                      <RotateCcw size={14} /> Remove signature / stamp
+                    </button>
+                  </div>
+                )}
+
+                {!currentBill.signature && (
+                  <button
+                    type="button"
+                    onClick={() => signatureInput.current?.click()}
+                    className="mt-3 flex items-center gap-2 rounded-xl bg-amber-100 px-4 py-2 text-xs font-semibold text-amber-900 ring-1 ring-amber-300 transition hover:bg-amber-200 cursor-pointer"
+                  >
+                    <ImagePlus size={16} /> Choose signature
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="border-t border-amber-100 pt-2">
+              <h2 className="mb-3 font-bold text-gray-900">
+                Bill transaction details
+              </h2>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {[
+                  ["loadingText", "Loading heading"],
+                  ["billNumber", "Bill number (No.)"],
+                  ["date", "Date", "date"],
+                  ["recipient", "To / Customer name"],
+                  ["recipientAddress", "Customer address (second line)"],
+                  ["truckNumber", "Truck number"],
+                  ["from", "From destination"],
+                  ["to", "To destination"],
+                  ["transport", "Transport name"],
+                  ["weight", "Weight"],
+                  ["rate", "Rate (Rs.)"],
+                  ...moneyFields,
+                ].map(([key, label, type]) => (
+                  <label
+                    key={key}
+                    className={`block text-xs font-bold text-gray-700 ${key === "recipientAddress" ? "sm:col-span-2" : ""
+                      }`}
+                  >
+                    <span className="mb-1 block font-bold">{label}</span>
                     <input
                       className="bill-input"
                       type={type || "text"}
                       value={currentBill[key] ?? ""}
+                      placeholder=""
                       onChange={(event) => updateField(key, event.target.value)}
                     />
-                  )}
-                </label>
-              ))}
+                  </label>
+                ))}
+              </div>
             </div>
           </section>
         )}
-
         <section className="bill-wrapper lg:sticky lg:top-5">
-          <div className="no-print mb-3 text-center text-xs text-gray-500">
+          <div className="no-print mb-3 text-center text-xs font-medium text-amber-900/80">
             Bill preview · Exact A4 proportional match
           </div>
 
@@ -809,40 +947,73 @@ useEffect(() => {
               </div>
 
               <div className="bill-top-center">
-                <div style={{ fontSize: "1.4em" }}>
-                  {currentBill.serialNumber}
-                </div>
+                <div style={{ fontSize: "1.4em" }}>786</div>
                 <div className="bill-title">Commission Bill</div>
               </div>
 
               <div className="bill-top-right">
-                Mob.: {currentBill.phones}
+                Mob.:{" "}
+                {currentBill.company.phones
+                  ? currentBill.company.phones.split("\n").join(" / ")
+                  : ""}
               </div>
             </div>
 
             <div className="company-row">
-              {logo && (
+              {currentBill.company.logoUrl && (
                 <img
-                  src={logo}
+                  src={currentBill.company.logoUrl}
                   alt="Company logo"
                   className="company-logo"
                 />
               )}
 
-              <div
-                className="company-name"
-                style={{ color: companyColor }}
-              >
-                {currentBill.companyName}
+              <div className="company-name">
+                {currentBill.company.nameWordColors &&
+                  currentBill.company.nameWordColors.length > 0 ? (
+                  currentBill.company.nameWordColors.map((item, idx) => (
+                    <span
+                      key={idx}
+                      style={{ color: item.color }}
+                      className="mr-1.5"
+                    >
+                      {item.word}
+                    </span>
+                  ))
+                ) : (
+                  <span style={{ color: "#d51f20" }}>
+                    {currentBill.company.companyName || ""}
+                  </span>
+                )}
               </div>
             </div>
 
-            <div className="company-subtitle">{currentBill.subtitle}</div>
-            <div className="company-regions">{currentBill.regions}</div>
+            <div
+              className="company-subtitle"
+              style={{ color: currentBill.company.headerTextColor || "#111" }}
+            >
+              {currentBill.company.subtitle}
+            </div>
+            <div
+              className="company-regions"
+              style={{ color: currentBill.company.headerTextColor || "#111" }}
+            >
+              {currentBill.company.regions}
+            </div>
             <div className="company-loading">{currentBill.loadingText}</div>
-            <div className="company-email">email : {currentBill.email}</div>
+            <div
+              className="company-email"
+              style={{ color: currentBill.company.headerTextColor || "#111" }}
+            >
+              {currentBill.company.email ? `email : ${currentBill.company.email}` : ""}
+            </div>
 
-            <div className="bill-address">{currentBill.address}</div>
+            <div
+              className="bill-address"
+              style={{ color: currentBill.company.headerTextColor || "#111" }}
+            >
+              {currentBill.company.address}
+            </div>
 
             <div className="bill-date-row">
               <span className="bill-label">Date :</span>
@@ -929,16 +1100,16 @@ useEffect(() => {
               <div className="bill-signature-container">
                 <div className="bill-signature">
                   <div className="bill-signature-space">
-                    {signature && (
+                    {currentBill.signature && (
                       <img
-                        src={signature}
+                        src={currentBill.signature}
                         alt="Company signature or stamp"
                         className="bill-signature-image"
                       />
                     )}
                   </div>
                 </div>
-                <div>For {currentBill.companyName}</div>
+                <div>For {currentBill.company.companyName || ""}</div>
               </div>
             </div>
 

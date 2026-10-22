@@ -61,14 +61,42 @@ export default function CompanyDetailsPage({ onBack }) {
   }
 
   function handleLogoUpload(e) {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        handleChange("logoUrl", reader.result);
-      };
-      reader.readAsDataURL(file);
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Enforce max upload limit (500KB) to prevent storage quota errors
+    if (file.size > 500 * 1024) {
+      alert("Logo image is too large! Please choose an image under 500KB.");
+      return;
     }
+
+    if (!file.type.startsWith("image/")) {
+      alert("Please select a valid image file.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const MAX_WIDTH = 400; // Keeps logos sharp yet lightweight
+        const scale = MAX_WIDTH / img.width;
+        canvas.width = MAX_WIDTH;
+        canvas.height = img.height * scale;
+
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        // Compress / resize into a storage-friendly Base64 string
+        const compressedDataUrl = canvas.toDataURL("image/png");
+
+        // Pass the optimized data string to your state handler
+        handleChange("logoUrl", compressedDataUrl);
+      };
+    };
+    reader.readAsDataURL(file);
   }
 
   function handleRemoveLogo() {
@@ -80,7 +108,11 @@ export default function CompanyDetailsPage({ onBack }) {
     try {
       localStorage.setItem(COMPANY_STORAGE_KEY, JSON.stringify(details));
       setSavedSuccess(true);
-      setTimeout(() => setSavedSuccess(false), 3000);
+      
+      // Show "Details Saved!" state briefly, then navigate back home
+      setTimeout(() => {
+        onBack?.();
+      }, 1200);
     } catch (e) {
       console.error("Failed to save company details", e);
     }
@@ -109,7 +141,7 @@ export default function CompanyDetailsPage({ onBack }) {
             className="inline-flex items-center gap-2 rounded-xl border border-amber-200/80 bg-white/80 px-4 py-2 text-xs font-semibold text-amber-900 shadow-xs hover:bg-amber-100/60 cursor-pointer transition"
           >
             <ArrowLeft size={16} />
-            <span>Back to Dashboard</span>
+            <span>Back</span>
           </button>
 
           {savedSuccess && (
@@ -296,10 +328,14 @@ export default function CompanyDetailsPage({ onBack }) {
             <div className="flex justify-end pt-4 border-t border-amber-100">
               <button
                 type="submit"
-                className="flex items-center gap-2 rounded-xl bg-amber-500 px-6 py-2.5 text-sm font-bold text-amber-950 shadow-sm hover:bg-amber-400 cursor-pointer transition"
+                className={`flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-bold shadow-sm cursor-pointer transition ${
+                  savedSuccess
+                    ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                    : "bg-amber-500 text-amber-950 hover:bg-amber-400"
+                }`}
               >
-                <Save size={17} />
-                <span>Save Company Details</span>
+                {savedSuccess ? <CheckCircle2 size={17} /> : <Save size={17} />}
+                <span>{savedSuccess ? "Details Saved!" : "Save Company Details"}</span>
               </button>
             </div>
           </form>
