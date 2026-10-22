@@ -38,10 +38,9 @@ const getInitialBillNumber = () => {
   } catch (e) {
     console.error("Failed to load next bill number", e);
   }
-  return "1031"; // Default starting number
+  return "1"; // Default starting number
 };
 
-const HISTORY_STORAGE_KEY = "loading_advice_bill_history";
 const DRAFT_STORAGE_KEY = "loading_advice_bill_draft";
 
 export default function LoadingAdviceBill({
@@ -183,40 +182,30 @@ export default function LoadingAdviceBill({
         if (signatureInput.current) signatureInput.current.value = "";
     }
 
-    function printBill() {
+  function printBill() {
     try {
-        let existingHistory = [];
-        const savedHistory = localStorage.getItem(HISTORY_STORAGE_KEY);
-        if (savedHistory) {
-            existingHistory = JSON.parse(savedHistory);
-        }
-        const newEntry = {
-            id: Date.now(),
-            savedAt: new Date().toLocaleString(),
-            billData: currentBill,
-        };
-        const updatedHistory = [newEntry, ...existingHistory].slice(0, 10);
-        localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(updatedHistory));
-
-        // 🔄 ADDED HERE: Automatically calculate and save the NEXT bill number (+1)
-        const currentNum = parseInt(currentBill.billNumber, 10);
-        if (!isNaN(currentNum)) {
-            const nextNum = (currentNum + 1).toString();
-            localStorage.setItem(NEXT_NUMBER_STORAGE_KEY, nextNum);
-        }
+      // 🔄 Auto-increment next bill number (+1)
+      const currentNum = parseInt(bill.billNumber, 10);
+      if (!isNaN(currentNum)) {
+        const nextNum = (currentNum + 1).toString();
+        localStorage.setItem(NEXT_NUMBER_STORAGE_KEY, nextNum);
+      }
     } catch (e) {
-        console.error("Failed to save bill to history", e);
+      console.error("Failed to update next bill number", e);
     }
 
+    // Clean up draft and trigger print
     localStorage.removeItem(DRAFT_STORAGE_KEY);
-    setHasUnsavedChanges(false);
     window.print();
 
+    // ⚡ Reset form instantly with the newly incremented bill number from storage
     setBill({
-        ...createEmptyBill(),
-        company: getSavedCompanyDetails(),
+      ...createEmptyBill(),
+      company: getSavedCompanyDetails(),
     });
-}
+    
+    setHasUnsavedChanges(false);
+  }
     return (
         <main className="min-h-screen bg-[#fdfbf7] px-3 py-5 sm:px-6 sm:py-8">
             <style>{`@import url('https://fonts.googleapis.com/css2?family=Anton&display=swap');
@@ -813,7 +802,7 @@ export default function LoadingAdviceBill({
                                 className="bill-top-right"
                                 style={{ color: currentBill.company.headerTextColor || "#111" }}
                             >
-                                MOD:{" "}
+                                MOB:{" "}
                                 {currentBill.company.phones
                                     ? currentBill.company.phones.split("\n").join(" / ")
                                     : ""}

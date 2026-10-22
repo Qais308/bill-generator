@@ -2,8 +2,20 @@ import { useRef, useState, useEffect } from "react";
 import { ArrowLeft, Download, ImagePlus, RotateCcw, Building2, Save, BookmarkCheck, ArrowRight } from "lucide-react";
 import { getSavedCompanyDetails } from "../components/CompanyDetailsPage";
 
+const NEXT_NUMBER_STORAGE_KEY = "commission_bill_next_number"; // 👈 Unique key for CommissionBill
+
+const getInitialBillNumber = () => {
+  try {
+    const saved = localStorage.getItem(NEXT_NUMBER_STORAGE_KEY);
+    if (saved) return saved;
+  } catch (e) {
+    console.error("Failed to load next bill number", e);
+  }
+  return "1"; // Default starting bill number for Commission Bill
+};
+
 const createEmptyBill = () => ({
-  billNumber: "",
+  billNumber: getInitialBillNumber(),
   date: new Date().toISOString().slice(0, 10),
   recipient: "",
   recipientAddress: "",
@@ -37,7 +49,8 @@ const moneyFields = [
   ["balance", "Balance"],
 ];
 
-const HISTORY_STORAGE_KEY = "commission_bill_history";
+
+
 const DRAFT_STORAGE_KEY = "commission_bill_draft";
 
 export default function CommissionBill({
@@ -179,33 +192,31 @@ export default function CommissionBill({
     if (signatureInput.current) signatureInput.current.value = "";
   }
 
-  function printBill() {
+ function printBill() {
     try {
-      let existingHistory = [];
-      const savedHistory = localStorage.getItem(HISTORY_STORAGE_KEY);
-      if (savedHistory) {
-        existingHistory = JSON.parse(savedHistory);
+      // 🔄 Auto-increment next bill number (+1)
+      const currentNum = parseInt(bill.billNumber, 10);
+      if (!isNaN(currentNum)) {
+        const nextNum = (currentNum + 1).toString();
+        localStorage.setItem(NEXT_NUMBER_STORAGE_KEY, nextNum);
       }
-      const newEntry = {
-        id: Date.now(),
-        savedAt: new Date().toLocaleString(),
-        billData: currentBill,
-      };
-      const updatedHistory = [newEntry, ...existingHistory].slice(0, 10);
-      localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(updatedHistory));
     } catch (e) {
-      console.error("Failed to save bill to history", e);
+      console.error("Failed to update next bill number", e);
     }
 
+    // Clean up draft and trigger print
     localStorage.removeItem(DRAFT_STORAGE_KEY);
-    setHasUnsavedChanges(false);
     window.print();
 
+    // ⚡ Reset form instantly with the newly incremented bill number from storage
     setBill({
       ...createEmptyBill(),
       company: getSavedCompanyDetails(),
     });
+    
+    setHasUnsavedChanges(false);
   }
+
   function updateField(key, value) {
     setBill((previous) => ({ ...previous, [key]: value }));
     setHasUnsavedChanges(true);
@@ -285,40 +296,6 @@ export default function CommissionBill({
     setBill((previous) => ({ ...previous, signature: "" }));
     setHasUnsavedChanges(true);
     if (signatureInput.current) signatureInput.current.value = "";
-  }
-
-  function printBill() {
-    // 1. Save downloaded bill record to history list
-    try {
-      let existingHistory = [];
-      const savedHistory = localStorage.getItem(HISTORY_STORAGE_KEY);
-      if (savedHistory) {
-        existingHistory = JSON.parse(savedHistory);
-      }
-      const newEntry = {
-        id: Date.now(),
-        savedAt: new Date().toLocaleString(),
-        billData: currentBill,
-        signature,
-      };
-      const updatedHistory = [newEntry, ...existingHistory].slice(0, 10);
-      localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(updatedHistory));
-    } catch (e) {
-      console.error("Failed to save bill to history", e);
-    }
-
-    // 2. Clear explicit draft storage so it doesn't persist on reopen
-    localStorage.removeItem(DRAFT_STORAGE_KEY);
-    setHasUnsavedChanges(false);
-
-    // 3. Trigger browser print / PDF download
-    window.print();
-
-    // 4. Reset form fields to blank immediately
-    setBill({
-      ...createEmptyBill(),
-      company: getSavedCompanyDetails(),
-    });
   }
 
   return (
@@ -958,7 +935,7 @@ export default function CommissionBill({
               </div>
 
               <div className="bill-top-right">
-                Mob.:{" "}
+                MOB.:{" "}
                 {currentBill.company.phones
                   ? currentBill.company.phones.split("\n").join(" / ")
                   : ""}
