@@ -108,9 +108,11 @@ export default function CommissionBill({
   const billRef = useRef(null); // 👈 1. Create the ref pointer
 
   async function downloadBillImage() {
+    await document.fonts.ready;
     if (!billRef.current) return;
 
     try {
+      
       // 2. Convert the HTML paper element into a PNG image
       const dataUrl = await toPng(billRef.current, { cacheBust: true, quality: 0.95, pixelRatio: 2 });
 
@@ -251,6 +253,13 @@ export default function CommissionBill({
   return (
     <main className="min-h-screen bg-[#fdfbf7] px-3 py-5 sm:px-6 sm:py-8">
       <style>{`
+           @font-face {
+  font-family: 'Segoe Print';
+  src: url('/fonts/segoepr.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
         /* Container Query driven paper proportions */
         .bill-wrapper {
           container-type: inline-size;
@@ -438,7 +447,7 @@ export default function CommissionBill({
 
         /* Answer value bold and sharp on mobile & desktop */
         .bill-value {
-        font-family: 'segoe print';
+        font-family:'Segoe Print', 'Kalam';
           display: inline-block;
           position: relative;
           padding: 0 0.5cqw 0 7cqw;
@@ -446,11 +455,11 @@ export default function CommissionBill({
           transform: translateY(-2px);
           overflow-wrap: anywhere;
           font-size: 1.2em;
-          font-weight: 550;
+          font-weight: 600;
           -webkit-font-smoothing: antialiased;
           line-height: 1.2;
           color: #111;
-          letter-spacing: 0.15em;
+          letter-spacing: 0.12em;
           z-index: 2;
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;

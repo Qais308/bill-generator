@@ -98,6 +98,7 @@ export default function LoadingAdviceBill({
     const adviceRef = useRef(null);
 
     async function downloadAdviceImage() {
+        await document.fonts.ready;
         if (!adviceRef.current) return;
 
         try {
@@ -199,6 +200,13 @@ export default function LoadingAdviceBill({
     return (
         <main className="min-h-screen bg-[#fdfbf7] px-3 py-5 sm:px-6 sm:py-8">
             <style>{`@import url('https://fonts.googleapis.com/css2?family=Anton&display=swap');
+             @font-face {
+  font-family: 'Segoe Print';
+  src: url('/fonts/segoepr.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
         /* Container Query driven paper proportions */
         .bill-wrapper {
           container-type: inline-size;
@@ -374,7 +382,7 @@ export default function LoadingAdviceBill({
         }
 
         .bill-value {
-        font-family: 'segoe print';
+        font-family:'Segoe Print', 'Kalam';
           display: inline-block;
           position: relative;
           padding: 0 0.5cqw 0 7cqw;
@@ -382,8 +390,8 @@ export default function LoadingAdviceBill({
           transform: translateY(-2px);
           overflow-wrap: anywhere;
           font-size: 1.2em;
-          letter-spacing: 0.15em;
-          font-weight: 550;
+          letter-spacing: 0.12em;
+          font-weight: 600;
           -webkit-font-smoothing: antialiased;
           line-height: 1.2;
           color: #1e3a8a;
@@ -487,6 +495,9 @@ export default function LoadingAdviceBill({
 
          /* Tighter line spacing ONLY on mobile screens */
         @media (max-width: 768px) {
+        .bill-value {
+    letter-spacing: normal !important; /* Forces specific spacing only when printing/exporting */
+  }
           .bill-fields {
             gap: 0.35cqw !important;
             padding-top: 0.2cqw !important;
@@ -562,6 +573,7 @@ export default function LoadingAdviceBill({
           .bill-wrapper * {
             visibility: visible;
           }
+            
 
          .bill-address {
             background-color: #0b1f3a !important;
