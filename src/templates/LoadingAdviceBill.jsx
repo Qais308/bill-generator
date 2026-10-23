@@ -224,7 +224,7 @@ export default function LoadingAdviceBill({
           flex-direction: column;
           font-size: 2.2cqw;
           line-height: 1;
-          color: #000050
+          color: #000050;
         }
 
         .commission-paper * {
@@ -329,6 +329,7 @@ export default function LoadingAdviceBill({
           margin: 0.8cqw 0.2cqw 0.5cqw;
           font-size: 1.15em;
           font-weight: 600;
+          white-space: nowrap;
         }
 
         /* Bill fields */
@@ -373,18 +374,19 @@ export default function LoadingAdviceBill({
         }
 
         .bill-value {
-        font-family: 'Caveat', cursive;
+        font-family: 'segoe print';
           display: inline-block;
           position: relative;
-          padding: 0 0.5cqw 0 5cqw;
+          padding: 0 0.5cqw 0 7cqw;
           background: white;
           transform: translateY(-2px);
           overflow-wrap: anywhere;
-          font-size: 1.1em;
-          font-weight: 500;
+          font-size: 1.2em;
+          letter-spacing: 0.15em;
+          font-weight: 550;
           -webkit-font-smoothing: antialiased;
           line-height: 1.2;
-          color: #111;
+          color: #1e3a8a;
           z-index: 2;
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
@@ -812,7 +814,7 @@ export default function LoadingAdviceBill({
                         <div className="bill-date-row">
                             <span className="bill-label">Date :</span>
                             <span className="bill-dots" style={{ width: "160px", flex: "none" }}>
-                                <span className="bill-value">
+                                <span className="bill-value" style={{ paddingLeft: "0px" }}>
                                     {currentBill.date
                                         ? new Date(
                                             `${currentBill.date}T00:00:00`

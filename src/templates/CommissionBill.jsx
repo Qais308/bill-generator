@@ -392,6 +392,7 @@ export default function CommissionBill({
           margin: 0.8cqw 0.2cqw 0.5cqw;
           font-size: 1.15em;
           font-weight: 600;
+          white-space: nowrap;
         }
 
         /* Bill fields */
@@ -437,17 +438,19 @@ export default function CommissionBill({
 
         /* Answer value bold and sharp on mobile & desktop */
         .bill-value {
+        font-family: 'segoe print';
           display: inline-block;
           position: relative;
-          padding: 0 0.5cqw 0 5cqw;
+          padding: 0 0.5cqw 0 7cqw;
           background: white;
           transform: translateY(-2px);
           overflow-wrap: anywhere;
-          font-size: 1.1em;
-          font-weight: 500;
+          font-size: 1.2em;
+          font-weight: 550;
           -webkit-font-smoothing: antialiased;
           line-height: 1.2;
           color: #111;
+          letter-spacing: 0.15em;
           z-index: 2;
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
@@ -904,7 +907,7 @@ export default function CommissionBill({
             <div className="bill-date-row">
               <span className="bill-label">Date :</span>
               <span className="bill-dots" style={{ width: "160px", flex: "none" }}>
-                <span className="bill-value">
+                <span className="bill-value" style={{ paddingLeft: "0px" }}>
                   {currentBill.date
                     ? new Date(
                       `${currentBill.date}T00:00:00`
