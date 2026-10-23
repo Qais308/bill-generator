@@ -9,8 +9,9 @@ export const DEFAULT_COMPANY_DETAILS = {
   email: "",
   address: "",
   phones: "",
-  logoUrl: "", // Base64 image data
-  headerTextColor: "#111827", // Default dark gray for subtitles & details
+  logoUrl: "", 
+  headerTextColor: "#111827", 
+  signature: "",
 };
 
 export const COMPANY_STORAGE_KEY = "shared_company_details";
@@ -101,6 +102,45 @@ export default function CompanyDetailsPage({ onBack }) {
 
   function handleRemoveLogo() {
     handleChange("logoUrl", "");
+  }
+
+  function handleSignatureUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 500 * 1024) {
+      alert("Signature image is too large! Please choose an image under 500KB.");
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      alert("Please select a valid image file.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const MAX_WIDTH = 300; // Keep signature lightweight
+        const scale = MAX_WIDTH / img.width;
+        canvas.width = MAX_WIDTH;
+        canvas.height = img.height * scale;
+
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.7);
+        handleChange("signature", compressedDataUrl);
+      };
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function handleRemoveSignature() {
+    handleChange("signature", "");
   }
 
   function handleSubmit(e) {
@@ -197,6 +237,42 @@ export default function CompanyDetailsPage({ onBack }) {
                       type="file"
                       accept="image/*"
                       onChange={handleLogoUpload}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+              </div>
+            </div>
+
+            {/* Signature Upload Section */}
+            {/* Signature Upload Section */}
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-2">Company Signature / Stamp</label>
+              <div className="flex items-center gap-4">
+                {details.signature ? (
+                  <div className="relative group flex h-20 w-32 items-center justify-center rounded-xl border border-amber-200 bg-amber-50/40 p-2">
+                    <img
+                      src={details.signature}
+                      alt="Company Signature Preview"
+                      className="max-h-full max-w-full object-contain"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleRemoveSignature}
+                      className="absolute -top-2 -right-2 rounded-full bg-red-600 p-1 text-white shadow-md hover:bg-red-700 cursor-pointer"
+                      title="Remove signature"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex h-20 w-36 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-amber-200/90 bg-amber-50/20 text-amber-800 hover:bg-amber-100/50 transition">
+                    <ImagePlus size={20} />
+                    <span className="mt-1 text-[11px] font-semibold">Upload Signature</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleSignatureUpload}
                       className="hidden"
                     />
                   </label>

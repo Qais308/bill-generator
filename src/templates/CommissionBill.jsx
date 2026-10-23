@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from "react";
 import { ArrowLeft, Download, ImagePlus, RotateCcw, Building2, Save, BookmarkCheck, ArrowRight } from "lucide-react";
 import { getSavedCompanyDetails } from "../components/CompanyDetailsPage";
+import { toPng } from "html-to-image";
 
 const NEXT_NUMBER_STORAGE_KEY = "commission_bill_next_number"; // 👈 Unique key for CommissionBill
 
@@ -34,7 +35,6 @@ const createEmptyBill = () => ({
   commission: "",
   neft: "",
   balance: "",
-  signature: "",
 });
 
 const moneyFields = [
@@ -81,7 +81,6 @@ export default function CommissionBill({
 
   const [showEditor, setShowEditor] = useState(true);
   const [isDraftSaved, setIsDraftSaved] = useState(false);
-  const signatureInput = useRef(null);
 
   // Sync unsaved changes with App.js for gesture interception
   useEffect(() => {
@@ -105,6 +104,42 @@ export default function CommissionBill({
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [hasUnsavedChanges]);
+
+  const billRef = useRef(null); // 👈 1. Create the ref pointer
+
+  async function downloadBillImage() {
+    if (!billRef.current) return;
+
+    try {
+      // 2. Convert the HTML paper element into a PNG image
+      const dataUrl = await toPng(billRef.current, { cacheBust: true, quality: 0.95, pixelRatio: 2 });
+
+      // 3. Automatically download the image file to the user's computer
+      const link = document.createElement("a");
+      link.download = `Commission-Bill-${bill.billNumber || "1"}.png`;
+      link.href = dataUrl;
+      link.click();
+
+      // 4. Auto-increment next bill number (+1)
+      const currentNum = parseInt(bill.billNumber, 10);
+      if (!isNaN(currentNum)) {
+        const nextNum = (currentNum + 1).toString();
+        localStorage.setItem(NEXT_NUMBER_STORAGE_KEY, nextNum);
+      }
+
+      // 5. Clean up draft and reset form with the new incremented number
+      localStorage.removeItem(DRAFT_STORAGE_KEY);
+      setBill({
+        ...createEmptyBill(),
+        company: getSavedCompanyDetails(),
+      });
+      setHasUnsavedChanges(false);
+
+    } catch (e) {
+      console.error("Failed to generate bill image", e);
+      alert("Failed to download image. Please try again.");
+    }
+  }
 
   const currentBill = externalData
     ? { ...createEmptyBill(), ...externalData, company: getSavedCompanyDetails() }
@@ -148,51 +183,8 @@ export default function CommissionBill({
     }
   }
 
-  function handleSignatureUpload(event) {
-  const file = event.target.files?.[0];
-  if (!file) return;
 
-  // Enforce max upload limit (500KB)
-  if (file.size > 500 * 1024) {
-    alert("Signature image is too large! Please choose an image under 500KB.");
-    return;
-  }
-
-  if (!file.type.startsWith("image/")) {
-    alert("Please select a valid image file.");
-    return;
-  }
-
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const img = new Image();
-    img.src = e.target.result;
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      const MAX_WIDTH = 300; // Signatures don't need to be larger than 300px wide
-      const scale = MAX_WIDTH / img.width;
-      canvas.width = MAX_WIDTH;
-      canvas.height = img.height * scale;
-
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-      const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.7);
-
-      setBill((previous) => ({ ...previous, signature: compressedDataUrl }));
-      setHasUnsavedChanges(true);
-    };
-  };
-  reader.readAsDataURL(file);
-}
-
-  function removeSignature() {
-    setBill((previous) => ({ ...previous, signature: "" }));
-    setHasUnsavedChanges(true);
-    if (signatureInput.current) signatureInput.current.value = "";
-  }
-
- function printBill() {
+  function printBill() {
     try {
       // 🔄 Auto-increment next bill number (+1)
       const currentNum = parseInt(bill.billNumber, 10);
@@ -213,7 +205,7 @@ export default function CommissionBill({
       ...createEmptyBill(),
       company: getSavedCompanyDetails(),
     });
-    
+
     setHasUnsavedChanges(false);
   }
 
@@ -255,48 +247,6 @@ export default function CommissionBill({
     }
   }
 
-  function handleSignatureUpload(event) {
-  const file = event.target.files?.[0];
-  if (!file) return;
-
-  // Enforce max upload limit (500KB)
-  if (file.size > 500 * 1024) {
-    alert("Signature image is too large! Please choose an image under 500KB.");
-    return;
-  }
-
-  if (!file.type.startsWith("image/")) {
-    alert("Please select a valid image file.");
-    return;
-  }
-
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const img = new Image();
-    img.src = e.target.result;
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      const MAX_WIDTH = 300; // Signatures don't need to be larger than 300px wide
-      const scale = MAX_WIDTH / img.width;
-      canvas.width = MAX_WIDTH;
-      canvas.height = img.height * scale;
-
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-      const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.7);
-
-      setBill((previous) => ({ ...previous, signature: compressedDataUrl }));
-      setHasUnsavedChanges(true);
-    };
-  };
-  reader.readAsDataURL(file);
-}
-  function removeSignature() {
-    setBill((previous) => ({ ...previous, signature: "" }));
-    setHasUnsavedChanges(true);
-    if (signatureInput.current) signatureInput.current.value = "";
-  }
 
   return (
     <main className="min-h-screen bg-[#fdfbf7] px-3 py-5 sm:px-6 sm:py-8">
@@ -325,7 +275,7 @@ export default function CommissionBill({
           display: flex;
           flex-direction: column;
           font-size: 2.1cqw;
-          line-height: 1.3;
+          line-height: 1.2;
         }
 
         .commission-paper * {
@@ -398,7 +348,7 @@ export default function CommissionBill({
           font-size: 1.35em;
           font-style: italic;
           font-weight: 500;
-          line-height: 1.2;
+          line-height: 1;
         }
 
         .company-regions {
@@ -489,11 +439,11 @@ export default function CommissionBill({
         .bill-value {
           display: inline-block;
           position: relative;
-          padding: 0 5px;
+          padding: 0 0.5cqw 0 5cqw;
           background: white;
           transform: translateY(-2px);
           overflow-wrap: anywhere;
-          font-size: 1em;
+          font-size: 1.1em;
           font-weight: 500;
           -webkit-font-smoothing: antialiased;
           line-height: 1.2;
@@ -784,10 +734,10 @@ export default function CommissionBill({
           </button>
           <button
             type="button"
-            onClick={printBill}
+            onClick={downloadBillImage} /* 👈 Changed from printBill to downloadBillImage */
             className="flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-amber-950 shadow-sm transition hover:bg-amber-400 cursor-pointer"
           >
-            <Download size={16} /> Print / Save PDF
+            <Download size={16} /> Download Bill Image
           </button>
         </div>
       </div>
@@ -831,53 +781,6 @@ export default function CommissionBill({
               </div>
             </div>
 
-            <div>
-              <h2 className="mb-3 font-bold text-gray-900">
-                Upload signature / stamp
-              </h2>
-
-              <div className="rounded-xl border border-dashed border-amber-200 bg-amber-50/30 p-4">
-                <input
-                  ref={signatureInput}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleSignatureUpload}
-                  className="hidden"
-                />
-
-                <p className="text-xs text-gray-500">
-                  PNG, JPG, or another browser-supported image format.
-                </p>
-
-                {currentBill.signature && (
-                  <div className="mt-3 flex items-center gap-3">
-                    <img
-                      src={currentBill.signature}
-                      alt="Saved signature or stamp"
-                      className="h-12 max-w-32 object-contain"
-                    />
-                    <button
-                      type="button"
-                      onClick={removeSignature}
-                      className="flex items-center gap-1 text-sm text-red-600 hover:text-red-800 font-medium"
-                    >
-                      <RotateCcw size={14} /> Remove signature / stamp
-                    </button>
-                  </div>
-                )}
-
-                {!currentBill.signature && (
-                  <button
-                    type="button"
-                    onClick={() => signatureInput.current?.click()}
-                    className="mt-3 flex items-center gap-2 rounded-xl bg-amber-100 px-4 py-2 text-xs font-semibold text-amber-900 ring-1 ring-amber-300 transition hover:bg-amber-200 cursor-pointer"
-                  >
-                    <ImagePlus size={16} /> Choose signature
-                  </button>
-                )}
-              </div>
-            </div>
-
             <div className="border-t border-amber-100 pt-2">
               <h2 className="mb-3 font-bold text-gray-900">
                 Bill transaction details
@@ -886,7 +789,7 @@ export default function CommissionBill({
                 {[
                   ["billNumber", "Bill number (No.)"],
                   ["date", "Date", "date"],
-                  ["recipient", "To / Customer name"],
+                  ["recipient", "To"],
                   ["recipientAddress", "Customer address (second line)"],
                   ["truckNumber", "Truck number"],
                   ["from", "From destination"],
@@ -920,7 +823,7 @@ export default function CommissionBill({
             Bill preview · Exact A4 proportional match
           </div>
 
-          <article className="commission-paper">
+          <article className="commission-paper" ref={billRef}>
             <div className="bill-top">
               <div>
                 No.:{" "}
@@ -1083,9 +986,9 @@ export default function CommissionBill({
               <div className="bill-signature-container">
                 <div className="bill-signature">
                   <div className="bill-signature-space">
-                    {currentBill.signature && (
+                    {currentBill.company?.signature && (
                       <img
-                        src={currentBill.signature}
+                        src={currentBill.company.signature}
                         alt="Company signature or stamp"
                         className="bill-signature-image"
                       />

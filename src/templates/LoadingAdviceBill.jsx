@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from "react";
 import { ArrowLeft, Download, ImagePlus, RotateCcw, Building2, Save, BookmarkCheck, ArrowRight } from "lucide-react";
 import { getSavedCompanyDetails } from "../components/CompanyDetailsPage";
+import { toPng } from "html-to-image";
 
 const createEmptyBill = () => ({
     billNumber: getInitialBillNumber(),
@@ -18,7 +19,6 @@ const createEmptyBill = () => ({
     diesel: "",
     advance: "",
     balance: "",
-    signature: "",
 });
 
 const moneyFields = [
@@ -32,13 +32,13 @@ const moneyFields = [
 const NEXT_NUMBER_STORAGE_KEY = "loading_advice_next_number";
 
 const getInitialBillNumber = () => {
-  try {
-    const saved = localStorage.getItem(NEXT_NUMBER_STORAGE_KEY);
-    if (saved) return saved;
-  } catch (e) {
-    console.error("Failed to load next bill number", e);
-  }
-  return "1"; // Default starting number
+    try {
+        const saved = localStorage.getItem(NEXT_NUMBER_STORAGE_KEY);
+        if (saved) return saved;
+    } catch (e) {
+        console.error("Failed to load next bill number", e);
+    }
+    return "1"; // Default starting number
 };
 
 const DRAFT_STORAGE_KEY = "loading_advice_bill_draft";
@@ -71,7 +71,6 @@ export default function LoadingAdviceBill({
 
     const [showEditor, setShowEditor] = useState(true);
     const [isDraftSaved, setIsDraftSaved] = useState(false);
-    const signatureInput = useRef(null);
 
     // Sync unsaved changes with App.js for gesture interception
     useEffect(() => {
@@ -95,6 +94,40 @@ export default function LoadingAdviceBill({
         window.addEventListener("beforeunload", handleBeforeUnload);
         return () => window.removeEventListener("beforeunload", handleBeforeUnload);
     }, [hasUnsavedChanges]);
+
+    const adviceRef = useRef(null);
+
+    async function downloadAdviceImage() {
+        if (!adviceRef.current) return;
+
+        try {
+            const dataUrl = await toPng(adviceRef.current, { cacheBust: true, quality: 0.95, pixelRatio: 2 });
+
+            const link = document.createElement("a");
+            link.download = `Loading-Advice-${bill.billNumber || "1"}.png`;
+            link.href = dataUrl;
+            link.click();
+
+            // 🔄 Auto-increment next bill number (+1) after download
+            const currentNum = parseInt(bill.billNumber, 10);
+            if (!isNaN(currentNum)) {
+                const nextNum = (currentNum + 1).toString();
+                localStorage.setItem(NEXT_NUMBER_STORAGE_KEY, nextNum);
+            }
+
+            // Clean up draft and reset form
+            localStorage.removeItem(DRAFT_STORAGE_KEY);
+            setBill({
+                ...createEmptyBill(),
+                company: getSavedCompanyDetails(),
+            });
+            setHasUnsavedChanges(false);
+
+        } catch (e) {
+            console.error("Failed to generate advice image", e);
+            alert("Failed to download image. Please try again.");
+        }
+    }
 
     const currentBill = externalData
         ? { ...createEmptyBill(), ...externalData, company: getSavedCompanyDetails() }
@@ -138,74 +171,31 @@ export default function LoadingAdviceBill({
         }
     }
 
-    function handleSignatureUpload(event) {
-        const file = event.target.files?.[0];
-        if (!file) return;
 
-        // Enforce max upload limit (500KB)
-        if (file.size > 500 * 1024) {
-            alert("Signature image is too large! Please choose an image under 500KB.");
-            return;
+    function printBill() {
+        try {
+            // 🔄 Auto-increment next bill number (+1)
+            const currentNum = parseInt(bill.billNumber, 10);
+            if (!isNaN(currentNum)) {
+                const nextNum = (currentNum + 1).toString();
+                localStorage.setItem(NEXT_NUMBER_STORAGE_KEY, nextNum);
+            }
+        } catch (e) {
+            console.error("Failed to update next bill number", e);
         }
 
-        if (!file.type.startsWith("image/")) {
-            alert("Please select a valid image file.");
-            return;
-        }
+        // Clean up draft and trigger print
+        localStorage.removeItem(DRAFT_STORAGE_KEY);
+        window.print();
 
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const img = new Image();
-            img.src = e.target.result;
-            img.onload = () => {
-                const canvas = document.createElement("canvas");
-                const MAX_WIDTH = 300;
-                const scale = MAX_WIDTH / img.width;
-                canvas.width = MAX_WIDTH;
-                canvas.height = img.height * scale;
+        // ⚡ Reset form instantly with the newly incremented bill number from storage
+        setBill({
+            ...createEmptyBill(),
+            company: getSavedCompanyDetails(),
+        });
 
-                const ctx = canvas.getContext("2d");
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-                const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.7);
-
-                setBill((previous) => ({ ...previous, signature: compressedDataUrl }));
-                setHasUnsavedChanges(true);
-            };
-        };
-        reader.readAsDataURL(file);
+        setHasUnsavedChanges(false);
     }
-
-    function removeSignature() {
-        setBill((previous) => ({ ...previous, signature: "" }));
-        setHasUnsavedChanges(true);
-        if (signatureInput.current) signatureInput.current.value = "";
-    }
-
-  function printBill() {
-    try {
-      // 🔄 Auto-increment next bill number (+1)
-      const currentNum = parseInt(bill.billNumber, 10);
-      if (!isNaN(currentNum)) {
-        const nextNum = (currentNum + 1).toString();
-        localStorage.setItem(NEXT_NUMBER_STORAGE_KEY, nextNum);
-      }
-    } catch (e) {
-      console.error("Failed to update next bill number", e);
-    }
-
-    // Clean up draft and trigger print
-    localStorage.removeItem(DRAFT_STORAGE_KEY);
-    window.print();
-
-    // ⚡ Reset form instantly with the newly incremented bill number from storage
-    setBill({
-      ...createEmptyBill(),
-      company: getSavedCompanyDetails(),
-    });
-    
-    setHasUnsavedChanges(false);
-  }
     return (
         <main className="min-h-screen bg-[#fdfbf7] px-3 py-5 sm:px-6 sm:py-8">
             <style>{`@import url('https://fonts.googleapis.com/css2?family=Anton&display=swap');
@@ -383,13 +373,14 @@ export default function LoadingAdviceBill({
         }
 
         .bill-value {
+        font-family: 'Caveat', cursive;
           display: inline-block;
           position: relative;
-          padding: 0 5px;
+          padding: 0 0.5cqw 0 5cqw;
           background: white;
           transform: translateY(-2px);
           overflow-wrap: anywhere;
-          font-size: 1em;
+          font-size: 1.1em;
           font-weight: 500;
           -webkit-font-smoothing: antialiased;
           line-height: 1.2;
@@ -649,10 +640,10 @@ export default function LoadingAdviceBill({
                     </button>
                     <button
                         type="button"
-                        onClick={printBill}
+                        onClick={downloadAdviceImage}
                         className="flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-amber-950 shadow-sm transition hover:bg-amber-400 cursor-pointer"
                     >
-                        <Download size={16} /> Print / Save PDF
+                        <Download size={16} /> Download Bill Image
                     </button>
                 </div>
             </div>
@@ -696,52 +687,6 @@ export default function LoadingAdviceBill({
                             </div>
                         </div>
 
-                        <div>
-                            <h2 className="mb-3 font-bold text-gray-900">
-                                Upload signature / stamp
-                            </h2>
-
-                            <div className="rounded-xl border border-dashed border-amber-200 bg-amber-50/30 p-4">
-                                <input
-                                    ref={signatureInput}
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleSignatureUpload}
-                                    className="hidden"
-                                />
-
-                                <p className="text-xs text-gray-500">
-                                    PNG, JPG, or another browser-supported image format.
-                                </p>
-
-                                {currentBill.signature && (
-                                    <div className="mt-3 flex items-center gap-3">
-                                        <img
-                                            src={currentBill.signature}
-                                            alt="Saved signature or stamp"
-                                            className="h-12 max-w-32 object-contain"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={removeSignature}
-                                            className="flex items-center gap-1 text-sm text-red-600 hover:text-red-800 font-medium"
-                                        >
-                                            <RotateCcw size={14} /> Remove signature / stamp
-                                        </button>
-                                    </div>
-                                )}
-
-                                {!currentBill.signature && (
-                                    <button
-                                        type="button"
-                                        onClick={() => signatureInput.current?.click()}
-                                        className="mt-3 flex items-center gap-2 rounded-xl bg-amber-100 px-4 py-2 text-xs font-semibold text-amber-900 ring-1 ring-amber-300 transition hover:bg-amber-200 cursor-pointer"
-                                    >
-                                        <ImagePlus size={16} /> Choose signature
-                                    </button>
-                                )}
-                            </div>
-                        </div>
 
                         <div className="border-t border-amber-100 pt-2">
                             <h2 className="mb-3 font-bold text-gray-900">
@@ -751,7 +696,7 @@ export default function LoadingAdviceBill({
                                 {[
                                     ["billNumber", "Bill number (No.)"],
                                     ["date", "Date", "date"],
-                                    ["recipient", "M/s Customer name"],
+                                    ["recipient", "M/s"],
                                     ["recipientAddress", "Customer address (second line)"],
                                     ["truckNumber", "Truck No."],
                                     ["from", "Ex (From)"],
@@ -786,7 +731,7 @@ export default function LoadingAdviceBill({
                         Bill preview · Exact A4 proportional match
                     </div>
 
-                    <article className="commission-paper">
+                    <article className="commission-paper" ref={adviceRef}>
                         <div className="bill-top">
                             <div>
                                 <strong style={{ fontSize: "1.4em" }}>
@@ -1000,9 +945,9 @@ export default function LoadingAdviceBill({
                                 </div>
                                 <div className="bill-signature">
                                     <div className="bill-signature-space">
-                                        {currentBill.signature && (
+                                        {currentBill.company?.signature && (
                                             <img
-                                                src={currentBill.signature}
+                                                src={currentBill.company.signature}
                                                 alt="Company signature or stamp"
                                                 className="bill-signature-image"
                                             />
