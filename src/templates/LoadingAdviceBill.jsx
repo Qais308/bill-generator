@@ -71,6 +71,7 @@ export default function LoadingAdviceBill({
 
     const [showEditor, setShowEditor] = useState(true);
     const [isDraftSaved, setIsDraftSaved] = useState(false);
+    const [isDownloading, setIsDownloading] = useState(false);
 
     // Sync unsaved changes with App.js for gesture interception
     useEffect(() => {
@@ -100,9 +101,10 @@ export default function LoadingAdviceBill({
     async function downloadAdviceImage() {
         await document.fonts.ready;
         if (!adviceRef.current) return;
+        setIsDownloading(true);
 
         try {
-            const dataUrl = await toPng(adviceRef.current, { cacheBust: true, quality: 0.95, pixelRatio: 2 });
+            const dataUrl = await toPng(adviceRef.current, { cacheBust: true, quality: 0.95, pixelRatio: 3 });
 
             const link = document.createElement("a");
             link.download = `Loading-Advice-${bill.billNumber || "1"}.png`;
@@ -127,6 +129,8 @@ export default function LoadingAdviceBill({
         } catch (e) {
             console.error("Failed to generate advice image", e);
             alert("Failed to download image. Please try again.");
+        } finally {
+            setIsDownloading(false);
         }
     }
 
@@ -655,9 +659,11 @@ export default function LoadingAdviceBill({
                     <button
                         type="button"
                         onClick={downloadAdviceImage}
-                        className="flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-amber-950 shadow-sm transition hover:bg-amber-400 cursor-pointer"
+                        disabled={isDownloading} // 👈 Uses the state
+                        className="flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-amber-950 shadow-sm transition hover:bg-amber-400 cursor-pointer disabled:opacity-80 disabled:cursor-wait"
                     >
-                        <Download size={16} /> Download Bill Image
+                        <Download size={16} className={isDownloading ? "animate-bounce" : ""} />
+                        <span>{isDownloading ? "Generating Image..." : "Download Bill Image"}</span> {/* 👈 Uses the state */}
                     </button>
                 </div>
             </div>

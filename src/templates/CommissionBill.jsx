@@ -81,6 +81,7 @@ export default function CommissionBill({
 
   const [showEditor, setShowEditor] = useState(true);
   const [isDraftSaved, setIsDraftSaved] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   // Sync unsaved changes with App.js for gesture interception
   useEffect(() => {
@@ -110,11 +111,12 @@ export default function CommissionBill({
   async function downloadBillImage() {
     await document.fonts.ready;
     if (!billRef.current) return;
+    setIsDownloading(true);
 
     try {
-      
+
       // 2. Convert the HTML paper element into a PNG image
-      const dataUrl = await toPng(billRef.current, { cacheBust: true, quality: 0.95, pixelRatio: 2 });
+      const dataUrl = await toPng(billRef.current, { cacheBust: true, quality: 0.95, pixelRatio: 3 });
 
       // 3. Automatically download the image file to the user's computer
       const link = document.createElement("a");
@@ -140,6 +142,8 @@ export default function CommissionBill({
     } catch (e) {
       console.error("Failed to generate bill image", e);
       alert("Failed to download image. Please try again.");
+    } finally {
+      setIsDownloading(false); // 👈 Add this block at the end
     }
   }
 
@@ -746,10 +750,12 @@ export default function CommissionBill({
           </button>
           <button
             type="button"
-            onClick={downloadBillImage} /* 👈 Changed from printBill to downloadBillImage */
-            className="flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-amber-950 shadow-sm transition hover:bg-amber-400 cursor-pointer"
+            onClick={downloadBillImage}
+            disabled={isDownloading} // 👈 Add this
+            className="flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-amber-950 shadow-sm transition hover:bg-amber-400 cursor-pointer disabled:opacity-80 disabled:cursor-wait"
           >
-            <Download size={16} /> Download Bill Image
+            <Download size={16} className={isDownloading ? "animate-bounce" : ""} />
+            <span>{isDownloading ? "Generating Image..." : "Download Bill Image"}</span> {/* 👈 Dynamic text */}
           </button>
         </div>
       </div>
